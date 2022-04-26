@@ -36,10 +36,6 @@
 #include "highlevel/ManagerBase.hpp"
 #include "nvcomp/bitcomp.hpp"
 #include "BitcompManager.hpp"
-/******************************************************************************
- * added bu Boyuan ************************************************************
- *****************************************************************************/
-#include <cuda_fp16.h>
 
 #ifdef ENABLE_BITCOMP
 
@@ -111,16 +107,6 @@ namespace nvcomp {
    * @param comp_buffer The location to output the compressed data to (GPU accessible).
    * @param comp_config Resulted from configure_compression given this decomp_buffer_size.
    * 
-   * @param is_lossy if is lossy, 1: is, 0: not.
-   * @param bitcomp_mode The lossy compression mode, 1: BITCOMP_LOSSY_FP_TO_SIGNED, 2: BITCOMP_LOSSY_FP_TO_UNSIGNED.
-   * @param fp_type Read the data as floating point 0: 16, 1: 32, 2: 64.
-   * @param delta Delta used for the integer quantization of the data.
-   * The floating point values are divided by the delta provided during the compression, and converted
-   * to integers. These integers are then compressed with a lossless encoder.
-   * Values that would overflow during quantization (e.g. large input values and a very small delta),
-   * as well as NaN, +Inf, -Inf will be handled correctly by the compression.
-   * The integers can be either signed or unsigned.
-   * 
    */
   void BitcompSingleStreamManager::do_compress(
       CommonHeader* common_header,
@@ -129,8 +115,7 @@ namespace nvcomp {
       const CompressionConfig& comp_config)
   {
     bitcompHandle_t handle;
-    if(is_lossy == 0){
-      CHECK_EQ(
+    CHECK_EQ(
         bitcompCreatePlan(
             &handle,
             comp_config.uncompressed_buffer_size,
@@ -139,63 +124,11 @@ namespace nvcomp {
             static_cast<bitcompAlgorithm_t>(format_spec->algo)),
         BITCOMP_SUCCESS);
 
-      CHECK_EQ(bitcompSetStream(handle, user_stream), BITCOMP_SUCCESS);
+    CHECK_EQ(bitcompSetStream(handle, user_stream), BITCOMP_SUCCESS);
 
-      CHECK_EQ(
-          bitcompCompressLossless(handle, decomp_buffer, comp_buffer),
-          BITCOMP_SUCCESS);
-    }
-    else if(is_lossy == 1){
-      if(fp_type == 0){
-        // CHECK_EQ(
-        //   bitcompCreatePlan(
-        //       &handle,
-        //       comp_config.uncompressed_buffer_size,
-        //       BITCOMP_FP16_DATA,
-        //       static_cast<bitcompMode_t>(bitcomp_mode),
-        //       static_cast<bitcompAlgorithm_t>(format_spec->algo)),
-        //   BITCOMP_SUCCESS);
-      
-        // CHECK_EQ(bitcompSetStream(handle, user_stream), BITCOMP_SUCCESS);
-
-        // CHECK_EQ(
-        //   bitcompCompressLossy_fp16(handle, reinterpret_cast<const half*>(decomp_buffer), comp_buffer, static_cast<half>(delta)),
-        //   BITCOMP_SUCCESS);
-      }
-      else if(fp_type == 1){
-        CHECK_EQ(
-          bitcompCreatePlan(
-              &handle,
-              comp_config.uncompressed_buffer_size,
-              BITCOMP_FP32_DATA, // static_cast<bitcompMode_t>(bitcomp_mode),
-              BITCOMP_LOSSY_FP_TO_SIGNED,
-              static_cast<bitcompAlgorithm_t>(format_spec->algo)),
-          BITCOMP_SUCCESS);
-
-        CHECK_EQ(bitcompSetStream(handle, user_stream), BITCOMP_SUCCESS);
-
-        CHECK_EQ(
-          bitcompCompressLossy_fp32(handle, reinterpret_cast<const float*>(decomp_buffer), comp_buffer, static_cast<float>(delta)),
-          BITCOMP_SUCCESS);
-      }
-      else if(fp_type == 2){
-        // CHECK_EQ(
-        //   bitcompCreatePlan(
-        //       &handle,
-        //       comp_config.uncompressed_buffer_size,
-        //       BITCOMP_FP64_DATA,
-        //       static_cast<bitcompMode_t>(bitcomp_mode),
-        //       static_cast<bitcompAlgorithm_t>(format_spec->algo)),
-        //   BITCOMP_SUCCESS);
-
-        // CHECK_EQ(bitcompSetStream(handle, user_stream), BITCOMP_SUCCESS);
-
-        // CHECK_EQ(
-        //   bitcompCompressLossy_fp64(handle, reinterpret_cast<const double*>(decomp_buffer), comp_buffer, static_cast<double>(delta)),
-        //   BITCOMP_SUCCESS);
-      }
-    }
-    
+    CHECK_EQ(
+        bitcompCompressLossless(handle, decomp_buffer, comp_buffer),
+        BITCOMP_SUCCESS);
 
     bitcomp_header_k<<<1, 1, 0, user_stream>>>(
         common_header, comp_buffer, comp_config.uncompressed_buffer_size);
@@ -225,8 +158,8 @@ namespace nvcomp {
         bitcompCreatePlan(
             &handle,
             config.decomp_data_size,
-            BITCOMP_FP32_DATA, // bitcomp_data_type(format_spec->data_type),
-            BITCOMP_LOSSY_FP_TO_SIGNED, // BITCOMP_LOSSLESS,
+            bitcomp_data_type(format_spec->data_type),
+            BITCOMP_LOSSLESS,
             static_cast<bitcompAlgorithm_t>(format_spec->algo)),
         BITCOMP_SUCCESS);
 

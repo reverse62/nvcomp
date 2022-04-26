@@ -29,10 +29,6 @@
  */
 
 #include <assert.h>
-#include <string>
-#include <fstream>
-#include <streambuf>
-#include <iostream>
 
 #include "nvcomp/bitcomp.hpp"
 #include "CudaUtils.h"
@@ -46,56 +42,10 @@ private:
   BitcompFormatSpecHeader* format_spec;
 
 public:
-  // Boyuan
-  uint8_t is_lossy;
-  uint8_t bitcomp_mode;
-  uint8_t fp_type;
-  double delta;
-  // std::string filename;
-
   BitcompSingleStreamManager(nvcompType_t data_type, int bitcomp_algo = 0, cudaStream_t user_stream = 0, const int device_id = 0)
     : ManagerBase(user_stream, device_id),      
       format_spec()
   {
-    is_lossy = 1;
-    bitcomp_mode = 1;
-    fp_type = 1;
-    delta = 1.0e-1;
-    // filename = "";
-
-    std::ifstream t("/home/boyuan.zhang1/bitcomp_lossy_config.txt");
-    t.seekg(0, std::ios::end);
-    size_t size = t.tellg();
-    std::string s(size, ' ');
-    t.seekg(0);
-    t.read(&s[0], size);
-
-    std::string delimiter = " ";
-    size_t pos = 0;
-    std::string token;
-    
-    pos = s.find(delimiter);
-    token = s.substr(0, pos);
-    is_lossy = stoi(token);
-    s.erase(0, pos + delimiter.length());
-
-    pos = s.find(delimiter);
-    token = s.substr(0, pos);
-    bitcomp_mode = stoi(token);
-    s.erase(0, pos + delimiter.length());
-
-    pos = s.find(delimiter);
-    token = s.substr(0, pos);
-    fp_type = stoi(token);
-    s.erase(0, pos + delimiter.length());
-
-    pos = s.find(delimiter);
-    token = s.substr(0, pos);
-    delta = stod(token);
-    s.erase(0, pos + delimiter.length());
-
-    // filename = s;
-
     CudaUtils::check(cudaHostAlloc(&format_spec, sizeof(BitcompFormatSpecHeader), cudaHostAllocDefault));
     format_spec->data_type = data_type;
     format_spec->algo = bitcomp_algo;
@@ -131,6 +81,7 @@ public:
       uint8_t* comp_buffer,
       const CompressionConfig& comp_config) final override;
 
+
   /**
    * @brief Required helper that actually does the decompression 
    *
@@ -158,7 +109,7 @@ public:
   }
 
   /**
-   * @brief Computes the required scratch s size 
+   * @brief Computes the required scratch buffer size 
    */
   size_t compute_scratch_buffer_size() final override
   {
@@ -167,7 +118,7 @@ public:
 
   /**
    * @brief Computes the maximum compressed output size for a given
-   * uncompressed s.
+   * uncompressed buffer.
    */
   size_t calculate_max_compressed_output_size(CompressionConfig& comp_config) final override;
 
