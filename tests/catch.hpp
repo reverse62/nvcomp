@@ -10457,8 +10457,8 @@ private:
     {
       if (auto* capture = getCurrentContext().getResultCapture())
         return *capture;
-      // else
-      //   CATCH_INTERNAL_ERROR("No result capture instance");
+      else
+        CATCH_INTERNAL_ERROR("No result capture instance");
     }
     } // namespace Catch
     // end catch_run_context.cpp
@@ -14783,19 +14783,16 @@ LeakDetector leakDetector;
 
 #ifndef __OBJC__
 
-#if defined(WIN32) && defined(_UNICODE) && !defined(DO_NOT_USE_WMAIN) && !defined(LOSSY_TEST_FLAG)
+#if defined(WIN32) && defined(_UNICODE) && !defined(DO_NOT_USE_WMAIN)
 // Standard C/C++ Win32 Unicode wmain entry point
 extern "C" int wmain (int argc, wchar_t * argv[], wchar_t * []) {
-  return Catch::Session().run(argc, argv);
-}
-#elif !defined(LOSSY_TEST_FLAG)
+#else
 // Standard C/C++ main entry point
 int main (int argc, char * argv[]) {
-  return Catch::Session().run(argc, argv);
-}
 #endif
 
-  
+  return Catch::Session().run(argc, argv);
+}
 
 #else // __OBJC__
 

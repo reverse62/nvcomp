@@ -178,11 +178,11 @@ public: // API
     }
     scratch_buffer = new_scratch_buffer;
   }
-  
+
   virtual void compress(
       const uint8_t* decomp_buffer, 
       uint8_t* comp_buffer,
-      const CompressionConfig& comp_config)
+      const CompressionConfig& comp_config) 
   {
     assert(finished_init);
 
@@ -251,36 +251,6 @@ private: // helpers
       const uint8_t* decomp_buffer, 
       uint8_t* comp_buffer,
       const CompressionConfig& comp_config) = 0;
-
-  // /******************************************************************************
-  //  * added bu Boyuan ************************************************************
-  //  *****************************************************************************/
-  // /**
-  //  * @brief Bitcomp lossy compression helper by Boyuan
-  //  * 
-  //  * @param common_header header filled in by this routine (GPU accessible)
-  //  * @param decomp_buffer The uncompressed input data (GPU accessible)
-  //  * @param decomp_buffer_size The length of the uncompressed input data
-  //  * @param comp_buffer The location to output the compressed data to (GPU accessible).
-  //  * @param comp_config Resulted from configure_compression given this decomp_buffer_size.
-  //  * @param bitcomp_mode The lossy compression mode, 1: BITCOMP_LOSSY_FP_TO_SIGNED, 2: BITCOMP_LOSSY_FP_TO_UNSIGNED.
-  //  * @param fp_type Read the data as floating point 0: 16, 1: 32, 2: 64.
-  //  * @param delta Delta used for the integer quantization of the data.
-  //  * The floating point values are divided by the delta provided during the compression, and converted
-  //  * to integers. These integers are then compressed with a lossless encoder.
-  //  * Values that would overflow during quantization (e.g. large input values and a very small delta),
-  //  * as well as NaN, +Inf, -Inf will be handled correctly by the compression.
-  //  * The integers can be either signed or unsigned.
-  //  * 
-  //  */
-  // virtual void do_lossy_compress(
-  //     CommonHeader* common_header,
-  //     const uint8_t* decomp_buffer, 
-  //     uint8_t* comp_buffer,
-  //     const CompressionConfig& comp_config,
-  //     uint8_t bitcomp_mode,
-  //     uint8_t fp_type,
-  //     double delta) = 0;
 
   /**
    * @brief Required helper that actually does the decompression 
