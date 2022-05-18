@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <string>
 #include <fstream>
+#include <sstream>
 #include <streambuf>
 #include <iostream>
 #include <dirent.h>
@@ -167,16 +168,28 @@ void print_data_quality_metrics(
 };
 
 template <typename T>
-void test_lossy_bitcomp(const T* input, size_t dtype_len)
+void test_lossy_bitcomp(const T* input, size_t dtype_len, double error_bound)
 {
   // find the range of data
-  float range = *max_element(input, input + dtype_len) - *min_element(input, input + dtype_len);
+  float max_value = *max_element(input, input + dtype_len);
+  float min_value = *min_element(input, input + dtype_len);
+  float range = max_value - min_value;
 
   // compute the delta based on range and write to configuration file
   ofstream MyFile("/home/boyuan.zhang1/bitcomp_lossy_config.txt");
-  float delta = range*1e-2;
-  MyFile << "1 1 1 "+std::to_string(delta);
+  // double error_bound = 1e-2;
+  double delta = range * error_bound;
+  ostringstream ss1;
+  ss1<<delta;
+  MyFile << "1 1 1 " + ss1.str();
   MyFile.close();
+
+  // string filename("/home/boyuan.zhang1/bitcomp_test.txt");
+  // ofstream file_out;
+
+  // file_out.open(filename, std::ios_base::app);
+  // file_out << ss1.str() << endl;
+  // file_out.close();
 
   // create GPU only input buffer
   T* d_in_data;
@@ -264,6 +277,9 @@ int main(int argc, char *argv[])
 {
   using T = float;
 
+  // using like high_level_quickstart_example error_bound
+  double error_bound = stod(argv[1]);
+
   // read bitcomp_lossy_file.txt to get the directory of files and size
   std::ifstream t("/home/boyuan.zhang1/bitcomp_lossy_file.txt");
   t.seekg(0, std::ios::end);
@@ -302,7 +318,7 @@ int main(int argc, char *argv[])
           fname.find(extension2, (fname.length() - extension2.length())) != std::string::npos){
         printf ("%s\n", entry->d_name);
         arr = read_binary_to_new_array<T>(dir_name + "/" + fname, dtype_len);
-        test_lossy_bitcomp(arr, dtype_len);
+        test_lossy_bitcomp(arr, dtype_len, error_bound);
         delete arr;
       }
     }
