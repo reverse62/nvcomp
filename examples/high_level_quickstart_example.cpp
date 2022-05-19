@@ -250,6 +250,9 @@ int main(int argc, char *argv[])
 {
   using T = unsigned short int;
 
+  // using like high_level_quickstart_example error_bound
+  double error_bound = stod(argv[1]);
+
   // read bitcomp_lossy_file.txt to get the directory of files and size
   std::ifstream t("/home/boyuan.zhang1/bitcomp_lossy_file.txt");
   t.seekg(0, std::ios::end);
@@ -274,7 +277,16 @@ int main(int argc, char *argv[])
   std::string extension1 = argv[1];
   // std::string extension2 = ".f32";
   std::string fname;
-  T* arr;
+  float* arr;
+  T* arr_sht;
+
+  // find the range of data
+  float max_value;
+  float min_value;
+  float range;
+
+  // double error_bound = 1e-2;
+  double delta;
 
   dp = opendir(dir_name.c_str());
   if (dp != nullptr) {
@@ -282,9 +294,19 @@ int main(int argc, char *argv[])
       fname = entry->d_name;
       if(fname.find(extension1, (fname.length() - extension1.length())) != std::string::npos){
         printf ("%s\n", entry->d_name);
-        arr = read_binary_to_new_array<T>(dir_name + "/" + fname, dtype_len);
-        test_bitcomp(arr, dtype_len, NVCOMP_TYPE_USHORT);
+        arr = read_binary_to_new_array<float>(dir_name + "/" + fname, dtype_len);
+        arr_sht = new T[dtype_len]();
+        max_value = *max_element(arr, arr + dtype_len);
+        min_value = *min_element(arr, arr + dtype_len);
+        range = max_value - min_value;
+        delta = range * error_bound;
+        for(int i = 0; i < dtype_len; i ++){
+          arr_sht[i] = round(arr[i] / delta);
+        }
+        // printf("original value: %e, delta: %e, round value: %f, final value: %d\n", arr[0], delta, round(arr[0] / delta), arr_sht[0]);
+        test_bitcomp(arr_sht, dtype_len, NVCOMP_TYPE_USHORT);
         delete arr;
+        delete arr_sht;
       }
     }
   }
