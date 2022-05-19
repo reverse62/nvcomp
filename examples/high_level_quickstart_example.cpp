@@ -178,7 +178,7 @@ void test_lossy_bitcomp(const T* input, size_t dtype_len, double error_bound)
   // compute the delta based on range and write to configuration file
   ofstream MyFile("/home/boyuan.zhang1/bitcomp_lossy_config.txt");
   // double error_bound = 1e-2;
-  double delta = range * error_bound;
+  double delta = range * error_bound * 2;
   ostringstream ss1;
   ss1<<delta;
   MyFile << "1 1 1 " + ss1.str();
