@@ -204,7 +204,7 @@ void test_bitcomp(const T* input, size_t dtype_len, nvcompType_t data_type)
   CUDA_CHECK(cudaStreamSynchronize(stream));
 
   size_t comp_out_bytes = manager.get_compressed_output_size(d_comp_out);
-  printf("the original data size is: %d\nthe compressed data size is: %d\nthe compress ratio is :%f\n", dtype_len * 2, comp_out_bytes, float(dtype_len) * 2 / float(comp_out_bytes));
+  printf("the original data size is: %d\nthe compressed data size is: %d\nthe compress ratio is :%f\n", dtype_len * 4, comp_out_bytes, float(dtype_len) * 4 / float(comp_out_bytes));
 
   cudaFree(d_in_data);
 
