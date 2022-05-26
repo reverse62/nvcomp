@@ -89,7 +89,7 @@ T* read_binary_to_new_array(const std::string& fname, size_t dtype_len)
 }
 
 template <typename T>
-void test_cascaded(const T* input, size_t dtype_len, nvcompType_t data_type)
+void test_lz4(const T* input, size_t dtype_len, nvcompType_t data_type, const size_t chunk_size = 1 << 16)
 {
   // create GPU only input buffer
   T* d_in_data;
@@ -97,17 +97,17 @@ void test_cascaded(const T* input, size_t dtype_len, nvcompType_t data_type)
   CUDA_CHECK(cudaMalloc((void**)&d_in_data, in_bytes));
   CUDA_CHECK(
       cudaMemcpy(d_in_data, input, in_bytes, cudaMemcpyHostToDevice));
+
   cudaStream_t stream;
   cudaStreamCreate(&stream);
 
-  nvcompBatchedCascadedOpts_t options = nvcompBatchedCascadedDefaultOpts;
-  options.type = data_type;
-  CascadedManager manager{options, stream};
+  LZ4Manager manager{chunk_size, data_type, stream};
   auto comp_config = manager.configure_compression(in_bytes);
 
   // Allocate output buffer
   uint8_t* d_comp_out;
   CUDA_CHECK(cudaMalloc(&d_comp_out, comp_config.max_compressed_buffer_size));
+
   manager.compress(
       reinterpret_cast<const uint8_t*>(d_in_data),
       d_comp_out,
@@ -116,7 +116,8 @@ void test_cascaded(const T* input, size_t dtype_len, nvcompType_t data_type)
   CUDA_CHECK(cudaStreamSynchronize(stream));
 
   size_t comp_out_bytes = manager.get_compressed_output_size(d_comp_out);
-  printf("the original data size is: %d\nthe compressed data size is: %d\nthe compress ratio is: %f\n", dtype_len, comp_out_bytes, float(dtype_len) / float(comp_out_bytes));
+  printf("the original data size is: %d\nthe compressed data size is: %d\nthe compress ratio is :%f\n", dtype_len, comp_out_bytes, float(dtype_len) / float(comp_out_bytes));
+
 
   cudaFree(d_in_data);
 
@@ -194,7 +195,7 @@ int main(int argc, char *argv[])
         printf ("%s\n", entry->d_name);
         file_size = GetFileSize(dir_name + "/" + fname);
         arr = read_binary_to_new_array<T>(dir_name + "/" + fname, file_size);
-        test_cascaded<T>(arr, file_size, NVCOMP_TYPE_UCHAR);
+        test_lz4<T>(arr, file_size, NVCOMP_TYPE_UCHAR);
         delete arr;
       }
     }
