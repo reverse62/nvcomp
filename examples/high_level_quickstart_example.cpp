@@ -65,7 +65,8 @@ using namespace nvcomp;
 #define CUDA_CHECK(cond)                                                       \
   do {                                                                         \
     cudaError_t err = cond;                                                    \
-    if (err != cudaSuccess) {                                               \
+    if (err != cudaSuccess) {                                                  \
+      std::cout << "Failure" << std::endl;                                     \
       std::cerr << "Failure" << std::endl;                                \
       return;                                                              \
     }                                                                         \
@@ -92,6 +93,7 @@ template <typename T>
 void test_cascaded(const T* input, size_t dtype_len, nvcompType_t data_type)
 {
   // create GPU only input buffer
+  std::cout << "start" << std::endl;
   T* d_in_data;
   const size_t in_bytes = sizeof(T) * dtype_len;
   CUDA_CHECK(cudaMalloc((void**)&d_in_data, in_bytes));
@@ -150,6 +152,7 @@ void test_cascaded(const T* input, size_t dtype_len, nvcompType_t data_type)
 
   cudaFree(d_comp_out);
   cudaFree(out_ptr);
+  std::cout << "end" << std::endl;
 }
 
 
