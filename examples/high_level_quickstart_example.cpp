@@ -90,26 +90,26 @@ T* read_binary_to_new_array(const std::string& fname, size_t dtype_len)
 }
 
 template <typename T>
-void test_cascaded(const T* input, size_t dtype_len, nvcompType_t data_type)
+void test_gdeflate(const T* input, size_t dtype_len, const size_t chunk_size = 1 << 16)
 {
   // create GPU only input buffer
-  std::cout << "start" << std::endl;
   T* d_in_data;
   const size_t in_bytes = sizeof(T) * dtype_len;
   CUDA_CHECK(cudaMalloc((void**)&d_in_data, in_bytes));
   CUDA_CHECK(
       cudaMemcpy(d_in_data, input, in_bytes, cudaMemcpyHostToDevice));
+
   cudaStream_t stream;
   cudaStreamCreate(&stream);
 
-  nvcompBatchedCascadedOpts_t options = nvcompBatchedCascadedDefaultOpts;
-  options.type = data_type;
-  CascadedManager manager{options, stream};
+  int algo = 0;
+  GdeflateManager manager{chunk_size, algo, stream};
   auto comp_config = manager.configure_compression(in_bytes);
 
   // Allocate output buffer
   uint8_t* d_comp_out;
   CUDA_CHECK(cudaMalloc(&d_comp_out, comp_config.max_compressed_buffer_size));
+
   manager.compress(
       reinterpret_cast<const uint8_t*>(d_in_data),
       d_comp_out,
@@ -152,7 +152,6 @@ void test_cascaded(const T* input, size_t dtype_len, nvcompType_t data_type)
 
   cudaFree(d_comp_out);
   cudaFree(out_ptr);
-  std::cout << "end" << std::endl;
 }
 
 
@@ -197,7 +196,7 @@ int main(int argc, char *argv[])
         printf ("%s\n", entry->d_name);
         file_size = GetFileSize(dir_name + "/" + fname);
         arr = read_binary_to_new_array<T>(dir_name + "/" + fname, file_size);
-        test_cascaded<T>(arr, file_size, NVCOMP_TYPE_UCHAR);
+        test_gdeflate<T>(arr, file_size);
         delete arr;
       }
     }
