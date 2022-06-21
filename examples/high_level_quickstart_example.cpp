@@ -274,8 +274,8 @@ int main(int argc, char *argv[])
   // iterate the dir to get file with .dat and .f32 to compress
   struct dirent *entry = nullptr;
   DIR *dp = nullptr;
-  std::string extension1 = argv[1];
-  // std::string extension2 = ".f32";
+  std::string extension1 = ".dat";
+  std::string extension2 = ".f32";
   std::string fname;
   float* arr;
   T* arr_sht;
@@ -292,7 +292,8 @@ int main(int argc, char *argv[])
   if (dp != nullptr) {
     while ((entry = readdir(dp))){
       fname = entry->d_name;
-      if(fname.find(extension1, (fname.length() - extension1.length())) != std::string::npos){
+      if(fname.find(extension1, (fname.length() - extension1.length())) != std::string::npos || 
+         fname.find(extension2, (fname.length() - extension2.length())) != std::string::npos){
         printf ("%s\n", entry->d_name);
         arr = read_binary_to_new_array<float>(dir_name + "/" + fname, dtype_len);
         arr_sht = new T[dtype_len]();
