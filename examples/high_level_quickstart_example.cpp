@@ -168,17 +168,26 @@ void print_data_quality_metrics(
 };
 
 template <typename T>
-void test_lossy_bitcomp(const T* input, size_t dtype_len, double error_bound)
+void write_array_to_binary(const std::string& fname, T* const _a, size_t const dtype_len)
+{
+    std::ofstream ofs(fname.c_str(), std::ios::binary | std::ios::out);
+    if (not ofs.is_open()) return;
+    ofs.write(reinterpret_cast<const char*>(_a), std::streamsize(dtype_len * sizeof(T)));
+    ofs.close();
+}
+
+template <typename T>
+void test_lossy_bitcomp(const T* input, size_t dtype_len, double error_bound, std::string fname)
 {
   // find the range of data
-  float max_value = *max_element(input, input + dtype_len);
-  float min_value = *min_element(input, input + dtype_len);
-  float range = max_value - min_value;
+  // float max_value = *max_element(input, input + dtype_len);
+  // float min_value = *min_element(input, input + dtype_len);
+  // float range = max_value - min_value;
 
   // compute the delta based on range and write to configuration file
   ofstream MyFile("/home/boyuan.zhang1/bitcomp_lossy_config.txt");
   // double error_bound = 1e-2;
-  double delta = range * error_bound * 2;
+  double delta = error_bound * 2; //range*error_bound*2;
   ostringstream ss1;
   ss1<<delta;
   MyFile << "1 1 1 " + ss1.str();
@@ -249,6 +258,21 @@ void test_lossy_bitcomp(const T* input, size_t dtype_len, double error_bound)
   cudaMemcpy(
       &res[0], out_ptr, dtype_len * sizeof(T), cudaMemcpyDeviceToHost);
   
+  std::string tmpName;
+  if(error_bound == 1e-1){
+    tmpName = fname + ".1e-1.o";
+  }
+  if(error_bound == 1e-2){
+    tmpName = fname + ".1e-2.o";
+  }
+  if(error_bound == 1e-4){
+    tmpName = fname + ".1e-4.o";
+  }
+  if(error_bound == 1e-5){
+    tmpName = fname + ".1e-5.o";
+  }
+  float* a = &res[0];
+  write_array_to_binary<T>(tmpName, a, dtype_len);
   auto stat = new stat_t;
   verify_data<float>(stat, res.data(), input, dtype_len);
   print_data_quality_metrics<float>(stat);
@@ -318,7 +342,7 @@ int main(int argc, char *argv[])
           fname.find(extension2, (fname.length() - extension2.length())) != std::string::npos){
         printf ("%s\n", entry->d_name);
         arr = read_binary_to_new_array<T>(dir_name + "/" + fname, dtype_len);
-        test_lossy_bitcomp(arr, dtype_len, error_bound);
+        test_lossy_bitcomp(arr, dtype_len, error_bound, fname);
         delete arr;
       }
     }
